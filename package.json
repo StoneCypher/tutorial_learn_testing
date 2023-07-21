@@ -1,0 +1,24 @@
+{
+  "name": "tutorial_learn_testing",
+  "version": "0.1.0",
+  "description": "Teach some rando from reddit how to press testing butan",
+  "main": "index.js",
+  "keywords": "tutorial testing test jest setup stonecypher",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/StoneCypher/tutorial_learn_testing.git"
+  },
+  "author": "John Haugeland <stonecypher@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/StoneCypher/tutorial_learn_testing/issues"
+  },
+  "homepage": "https://github.com/StoneCypher/tutorial_learn_testing#readme",
+  "devDependencies": {
+    "jest": "^29.6.1",
+    "jest-json-reporter2": "^1.1.0"
+  }
+}

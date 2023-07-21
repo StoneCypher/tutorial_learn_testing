@@ -446,3 +446,166 @@ So it's enough to just write the build script now.
       },
 
 And now, all you do is write `npm run build`, and your tests will be run and your documentation extracted.
+
+Bump `package.json` to 0.5.0 and commit and push
+
+    git add . && git commit -m "0.5.0 build script" && git push origin
+
+## Run build post-install
+
+And this one's quite easy.  There are a handful of standard `script` titles which will be invoked when `node` gets to certain steps.  One of those is `post-install`, which gets run after a module is installed.
+
+As a result, we can just add one line (and the comma on the previous line:)
+
+    "postinstall": "npm run build"
+
+This means that `node` will automatically run the build process when the module is installed, which is appropriate for our setup.
+
+Since we haven't added any libraries, `npm install` is a no-op for us, so we can test by just running `npm install` again, and seeing if it triggers a build.  It does.
+
+Bump package to 0.6.0, commit, and push anew.
+
+    git add . && git commit -m "0.6.0 build script" && git push origin
+
+&nbsp;
+
+## Set up Github Actions
+
+And now we make the robot test your stuff for you.  You'll still run your tests locally to make sure things are running well while you're working, but every single time you check in from here on in after this, the robot will try them on a bunch of platforms for you silently in the background.
+
+This is called "continuous integration."  When people say CI/CD, this is the CI part.
+
+Go to your repo on the web.  Go to the `actions` tab.
+
+There's a bunch with "node.js" in the name.  You want the one that's *just* called node.js.  Use the search widget.  Le click.
+
+It will put you in a weird code editor with approximately this:
+
+    # This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
+    # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
+
+    name: Node.js CI
+
+    on:
+      push:
+        branches: [ "main" ]
+      pull_request:
+        branches: [ "main" ]
+
+    jobs:
+      build:
+
+        runs-on: ubuntu-latest
+
+        strategy:
+          matrix:
+            node-version: [14.x, 16.x, 18.x]
+            # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+
+        steps:
+        - uses: actions/checkout@v3
+        - name: Use Node.js ${{ matrix.node-version }}
+          uses: actions/setup-node@v3
+          with:
+            node-version: ${{ matrix.node-version }}
+            cache: 'npm'
+        - run: npm ci
+        - run: npm run build --if-present
+        - run: npm test
+
+Cool.  We're gonna change it.
+
+First off, nobody runs three steps in three separate contexts to install.  Let's change that last three lines of `run` to just:
+
+        - run: npm install
+
+Since we have a proper NPM module, which runs the build after being installed, and runs the tests on build, we're done with that part.  However, those node versions are out of date - 20 exists - and we're only testing one operating system.  These are only testing even numbered node versions because odd versions are development versions, and aren't considered stable.  I think that's silly.
+
+The thing is, testing on Windows is slow on Github, and testing on Mac is agonizingly slow.  So we'll do *most* of our testing in Linux.  We'll test all the `node` versions in Linux, and also the current version only in Windows and Mac.
+
+We'll just wholesale replace the strategy block, with this one:
+
+
+        strategy:
+          matrix:
+            include:
+              - node-version: 20.x   # fastest, so run first, to error fast
+                os: ubuntu-latest
+              - node-version: 20.x   # slowest, so run next. sort by slowest from here to get earliest end through parallelism
+                os: macos-latest
+              - node-version: 20.x   # finish check big-3 on latest current
+                os: windows-latest
+              - node-version: 14.x   # lastly check just ubuntu on historic node versions because speed, oldest (slowest) first
+                os: ubuntu-latest
+              - node-version: 15.x
+                os: ubuntu-latest
+              - node-version: 16.x
+                os: ubuntu-latest
+              - node-version: 17.x
+                os: ubuntu-latest
+              - node-version: 18.x
+                os: ubuntu-latest
+              - node-version: 19.x
+                os: ubuntu-latest
+
+As you can see, the first three rows test windows, mac, and ubuntu on node 20.  The remainder rest older node on ubuntu.
+
+Github is going to fire up a separate virtual machine for each of these - up to ten in parallel - and run the whole stack for each one, and fail the build if *any* of them fail.
+
+After that, you replace the `runs-on` directive with one that invokes the operating system named in the strategy matrix:
+
+    runs-on: ${{ matrix.os }}
+
+The result should look like this:
+
+    # This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
+    # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
+
+    name: Node.js CI
+
+    on:
+      push:
+        branches: [ "main" ]
+      pull_request:
+        branches: [ "main" ]
+
+    jobs:
+      build:
+
+        strategy:
+          matrix:
+            include:
+              - node-version: 20.x   # fastest, so run first, to error fast
+                os: ubuntu-latest
+              - node-version: 20.x   # slowest, so run next. sort by slowest from here to get earliest end through parallelism
+                os: macos-latest
+              - node-version: 20.x   # finish check big-3 on latest current
+                os: windows-latest
+              - node-version: 14.x   # lastly check just ubuntu on historic node versions because speed, oldest (slowest) first
+                os: ubuntu-latest
+              - node-version: 15.x
+                os: ubuntu-latest
+              - node-version: 16.x
+                os: ubuntu-latest
+              - node-version: 17.x
+                os: ubuntu-latest
+              - node-version: 18.x
+                os: ubuntu-latest
+              - node-version: 19.x
+                os: ubuntu-latest
+
+        runs-on: ${{ matrix.os }}
+
+        steps:
+        - uses: actions/checkout@v3
+        - name: Use Node.js ${{ matrix.node-version }}
+          uses: actions/setup-node@v3
+          with:
+            node-version: ${{ matrix.node-version }}
+            cache: 'npm'
+        - run: npm install
+
+Commit that shit.  You've now got test robots.  Wait a couple seconds and go back to the actions tab (it takes like five seconds for the VMs to start spawning.)
+
+
+

@@ -245,5 +245,180 @@ And then commit and push.
 
 # Almost to the first goal: a running test
 
-So, cool, we're nearly there, it turns out.  We just need a simple test, to test our beans.
+You continue as the `developer`.
 
+So, cool, we're nearly there, it turns out.  We just need a simple test, to test our beans.  Let's try `square`.
+
+    describe('square', () => {
+
+    });
+
+`describe` is actually optional, but it makes things readable, so use it.  This basically says "I'm making a group of tests and the group is gonna be called square."  Then, for reasons that have to do with catching things that throw correctly, the second argument is an anonymous lambda function that contains our actual testing code.
+
+Get used to that.  You do that a lot.  When you're requiring something to fail and it's not failing the way you expect, that's usually the thing you forgot.
+
+Let's stuff a couple tests inside.  This is what a test looks like:
+
+    test('square of 3 is 9', () => expect( square(3) ).toBe(9) );
+
+# Look!  A spec!
+
+So maybe my shiny new specification says something like
+
+    const index  = require('../index.js'),
+          square = index.square;
+
+    describe('square', () => {
+
+      test('square of 0 is 0',       () => expect(    square(0) ).toBe(0)    );
+      test('square of 3 is 9',       () => expect(    square(3) ).toBe(9)    );
+      test('square of -3 is 9',      () => expect(   square(-3) ).toBe(9)    );
+      test('square of 1.5 is 2.25',  () => expect(  square(1.5) ).toBe(2.25) );
+      test('square of -1.5 is 2.25', () => expect( square(-1.5) ).toBe(2.25) );
+
+    });
+
+We'll make a directory `./src/js/tests` and throw this in as `index.spec.js`.  There's no matching up of filenames or whatever; it's just gonna run all the specs.
+
+And you run the test!  And ... and it's `module.exports`, not `export`.  We're in CommonJS.
+
+     FAIL  src/js/tests/index.spec.js
+      ● Test suite failed to run
+
+        Jest encountered an unexpected token
+
+        Jest failed to parse a file. This happens e.g. when your code or its dependencies use non-standard JavaScript syntax, or when Jest is not configured to support such syntax.
+
+        Out of the box Jest supports Babel, which will be used to transform your files into valid JS based on your Babel configuration.
+
+        By default "node_modules" folder is ignored by transformers.
+
+        Here's what you can do:
+         • If you are trying to use ECMAScript Modules, see https://jestjs.io/docs/ecmascript-modules for how to enable it.
+         • If you are trying to use TypeScript, see https://jestjs.io/docs/getting-started#using-typescript
+         • To have some of your "node_modules" files transformed, you can specify a custom "transformIgnorePatterns" in your config.
+         • If you need a custom transformation specify a "transform" option in your config.
+         • If you simply want to mock your non-JS modules (e.g. binary assets) you can stub them out with the "moduleNameMapper" config option.
+
+        You'll find more details and examples of these config options in the docs:
+        https://jestjs.io/docs/configuration
+        For information about custom transformations, see:
+        https://jestjs.io/docs/code-transformation
+
+        Details:
+
+        C:\Users\john\projects\scratch\tutorial_learn_testing\src\js\index.js:7
+        export { square, hello };
+        ^^^^^^
+
+        SyntaxError: Unexpected token 'export'
+
+        > 1 | const index  = require('../index.js'),
+            |                                      ^
+          2 |       square = index.square;
+          3 |
+          4 | describe('square', () => {
+
+          at Runtime.createScriptFromCode (node_modules/jest-runtime/build/index.js:1496:14)
+          at Object.<anonymous> (src/js/tests/index.spec.js:1:38)
+
+    ----------|---------|----------|---------|---------|-------------------
+    File      | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+    ----------|---------|----------|---------|---------|-------------------
+    All files |       0 |        0 |       0 |       0 |
+    ----------|---------|----------|---------|---------|-------------------
+    Test Suites: 1 failed, 1 total
+    Tests:       0 total
+    Snapshots:   0 total
+    Time:        0.732 s
+    Ran all test suites.
+
+God damnit John.  ... but this is why we test.
+
+With that fixed?  The tests run.
+
+    $ npx jest
+     PASS  src/js/tests/index.spec.js
+    ----------|---------|----------|---------|---------|-------------------
+    File      | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+    ----------|---------|----------|---------|---------|-------------------
+    All files |       0 |        0 |       0 |       0 |
+    ----------|---------|----------|---------|---------|-------------------
+
+    Test Suites: 1 passed, 1 total
+    Tests:       5 passed, 5 total
+    Snapshots:   0 total
+    Time:        0.686 s
+    Ran all test suites.
+
+We have a working test environment.  Bump to `0.3.0`, commit, and push.
+
+&nbsp;
+
+&nbsp;
+
+# Scripting this appropriately
+
+A well behaved `node` module has a couple standard behaviors.  It will build when you `npm run build`.  It will test when you `npm run test`.  It will do both of those on its own when it is installed the first time.
+
+We haven't set any of that up yet.
+
+&nbsp;
+
+# npm run build
+
+The build is where you do any "making the thing" type of steps: typescript, bundling, documentation extraction, that kind of stuff.
+
+We have two functions.  There's no real build here.  So ... let's set up documentation generation, so we have an excuse for that step to exist.  Lol.
+
+We'll install a package called `documentation`, which admittedly is a little confusing.
+
+    npm install --save-dev documentation
+
+Next we'll try to use it, and it'll seem to do nothing.
+
+    npx documentation
+
+So we read the docs.  It has to be told what directory to build, what format to output in, and what directory to output in.  We'll try to use it again, and it'll kersplode.
+
+    npx documentation build src/js/** -f html -o docs/docs/
+
+    Error: ENOENT: no such file or directory, open 'docs/docs/'
+        at Object.openSync (node:fs:589:3)
+        at Object.writeFileSync (node:fs:2247:35)
+        at onFormatted (file:///C:/Users/john/projects/scratch/tutorial_learn_testing/node_modules/documentation/src/commands/build.js:92:10)
+
+This basically says "the directory you told me to target doesn't exist."  This is because `documentation` is smart enough to make the directory it's told to if it doesn't exist, but not if the parent also doesn't exist, and we targeted `docs/docs/`, and the parent `docs/` isn't there either.
+
+> Wait.  Why `docs/docs/`?
+
+Because Github Pages.  We'll get back to that.
+
+So, make the directory `docs`, then the directory `docs/docs` (because most shells also can't make the parent at the same time, and --ensure is uncommon.)  And try again
+
+    mkdir docs
+    mkdir docs/docs
+    npx documentation build src/js/** -f html -o docs/docs/
+
+And would you look at that?  There's a webpage in `docs/docs/` explaining our dumb two little functions to us.
+
+We have use of a build step 😁
+
+Let's go back into `package.json` and write our first `script`.  See that block in the middle?
+
+      "scripts": {
+        "test": "jest"
+      },
+
+Let's add another row to that object called `"docs"`.
+
+      "scripts": {
+        "test": "jest",
+        "docs": "documentation build src/js/** -f html -o docs/docs/"
+      },
+
+Their order doesn't matter; javascript objects aren't ordered.  But I like to keep the ones being called above, and the ones doing the calling below, because I think that's more readable.
+
+Notice we're not writing `npx` in here.  That's because all that does is load the node environment, and that's already happening by the `scripts` block, so there's no reason to do it a second time.
+
+We can now write `npm run docs` (not npx, npm - we're running a script, not executing a command) and it'll do whatever we said in the script block.

@@ -1,13 +1,14 @@
 {
   "name": "tutorial_learn_testing",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Teach some rando from reddit how to press testing butan",
   "main": "index.js",
   "keywords": "tutorial testing test jest setup stonecypher",
   "scripts": {
     "test": "jest",
     "docs": "documentation build src/js/** -f html -o docs/docs/",
-    "build": "npm run test && npm run docs"
+    "build": "npm run test && npm run docs",
+    "postinstall": "npm run build"
   },
   "repository": {
     "type": "git",

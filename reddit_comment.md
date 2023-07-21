@@ -371,6 +371,10 @@ The build is where you do any "making the thing" type of steps: typescript, bund
 
 We have two functions.  There's no real build here.  So ... let's set up documentation generation, so we have an excuse for that step to exist.  Lol.
 
+&nbsp;
+
+## documentation
+
 We'll install a package called `documentation`, which admittedly is a little confusing.
 
     npm install --save-dev documentation
@@ -422,3 +426,23 @@ Their order doesn't matter; javascript objects aren't ordered.  But I like to ke
 Notice we're not writing `npx` in here.  That's because all that does is load the node environment, and that's already happening by the `scripts` block, so there's no reason to do it a second time.
 
 We can now write `npm run docs` (not npx, npm - we're running a script, not executing a command) and it'll do whatever we said in the script block.
+
+Bump version in `package.json` while you're there - we're on 0.4.0 now - and commit.
+
+    git add . && git commit -m "0.4.0 documentation extraction" && git push origin
+
+&nbsp;
+
+## Run the tests in the build
+
+Now we just need to update the build to also run the tests.  Tests are actually already in the scripts block - it's the only one it creates automatically, from back when you make the project.
+
+So it's enough to just write the build script now.
+
+      "scripts": {
+        "test": "jest",
+        "docs": "documentation build src/js/** -f html -o docs/docs/",
+        "build": "npm run test && npm run docs"
+      },
+
+And now, all you do is write `npm run build`, and your tests will be run and your documentation extracted.
